@@ -13,6 +13,8 @@ import path from 'path';
 import {Message, MessageChunk, ErrorMessage, Summary, Action, ActionResponse} from '../ts/conversation_interfaces.js';
 import { RunFileManager } from '../RunFileManager.js';
 import { ChatWindow } from '../windows/ChatWindow.js';
+import { ApiConnectionInterface } from '../../shared/apiConnectionInterface.js';
+import { NaiApiConnection } from '../../shared/naiApiConnection.js';
 const contextLimits = require("../../../public/contextLimits.json");
 
 const userDataPath = path.join(app.getPath('userData'), 'votc_data');
@@ -24,9 +26,9 @@ export class Conversation{
     messages: Message[];
     config: Config;
     runFileManager: RunFileManager;
-    textGenApiConnection: ApiConnection;
-    summarizationApiConnection: ApiConnection;
-    actionsApiConnection: ApiConnection;
+    textGenApiConnection: ApiConnectionInterface;
+    summarizationApiConnection: ApiConnectionInterface;
+    actionsApiConnection: ApiConnectionInterface;
     description: string;
     actions: Action[];
     exampleMessages: Message[];
@@ -63,21 +65,34 @@ export class Conversation{
         this.runFileManager = new RunFileManager(config.userFolderPath);
         this.description = "";
         this.actions = [];
-        this.exampleMessages = [],
+        this.exampleMessages = [];
 
         //TODO:::!!!
-        this.textGenApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        if(this.config.textGenerationApiConnectionConfig.connection.type === "novelai"){
+            this.textGenApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        } else {
+            this.textGenApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        }
+
 
         if(this.config.summarizationUseTextGenApi){
+            if(this.config.summarizationApiConnectionConfig.connection.type === "novelai"){
+                this.summarizationApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);
+            } else {
             this.summarizationApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);;
+            }
         }
         else{
             this.summarizationApiConnection = new ApiConnection(this.config.summarizationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);
         }
         
-        if(this.config.actionsUseTextGenApi){;
-            this.actionsApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
-        }
+        if(this.config.actionsUseTextGenApi){
+            if(this.config.actionsApiConnectionConfig.connection.type === "novelai"){
+                this.actionsApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
+            }else{
+                this.actionsApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
+            }
+            }
         else{
             this.actionsApiConnection = new ApiConnection(this.config.actionsApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);
         }
@@ -250,18 +265,31 @@ export class Conversation{
     
         this.loadActions();
 
-        this.textGenApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        if(this.config.textGenerationApiConnectionConfig.connection.type === "novelai"){
+            this.textGenApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        } else {
+            this.textGenApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.textGenerationApiConnectionConfig.parameters);
+        }
+
 
         if(this.config.summarizationUseTextGenApi){
+            if(this.config.summarizationApiConnectionConfig.connection.type === "novelai"){
+                this.summarizationApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);
+            } else {
             this.summarizationApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);;
+            }
         }
         else{
             this.summarizationApiConnection = new ApiConnection(this.config.summarizationApiConnectionConfig.connection, this.config.summarizationApiConnectionConfig.parameters);
         }
         
-        if(this.config.actionsUseTextGenApi){;
-            this.actionsApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
-        }
+        if(this.config.actionsUseTextGenApi){
+            if(this.config.actionsApiConnectionConfig.connection.type === "novelai"){
+                this.actionsApiConnection = new NaiApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
+            }else{
+                this.actionsApiConnection = new ApiConnection(this.config.textGenerationApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);;
+            }
+            }
         else{
             this.actionsApiConnection = new ApiConnection(this.config.actionsApiConnectionConfig.connection, this.config.actionsApiConnectionConfig.parameters);
         }

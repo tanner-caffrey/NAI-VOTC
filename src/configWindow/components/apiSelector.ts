@@ -3,6 +3,7 @@ import { Config } from '../../shared/Config';
 import fs from 'fs';
 import path from 'path';
 import { ApiConnection, apiConnectionTestResult } from '../../shared/apiConnection';
+import { NaiApiConnection } from '../../shared/naiApiConnection';
 
 const template = document.createElement("template");
 
@@ -13,9 +14,10 @@ function defineTemplate(label: string){
     </style>
     
     <div class="input-group">
-        <label for="connection-api">API</label>
+        <label for="connection-api">API!!</label>
         <select name="connection-api" id="connection-api">
             <option value="openrouter">OpenRouter</option>
+            <option value="novelai">NovelAI</option>
             <option value="ooba">Text Gen WebUI (ooba)</option>
             <option value="openai">OpenAI</option>
             <option value="custom">Custom (OpenAI-compatible)</option>
@@ -37,6 +39,24 @@ function defineTemplate(label: string){
             <select id="openai-model-select">
                 <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Recommended)</option>
                 <option value="gpt-4o">GPT-4-o</option>
+            </select>
+            </div>
+        </div>
+
+        <div id="novelai-menu">
+            <h2>NovelAI</h2>
+
+            <div class="input-group">
+            <label for="api-key">API Key</label>
+            <br>
+            <input type="text" id="novelai-key">
+            </div>
+        
+            <div class="input-group">
+            <label for="novelai-model-select">Model</label>
+            <select id="novelai-model-select">
+                <option value="llama-3-erato-v1">Llama 3 Erato</option>
+                <option value="euterpe-v2">Euterpe</option>
             </select>
             </div>
         </div>
@@ -115,6 +135,7 @@ class ApiSelector extends HTMLElement{
 
     openaiDiv: HTMLDivElement
     oobaDiv: HTMLDivElement
+    naiDiv: HTMLDivElement
     openrouterDiv: HTMLDivElement 
     customDiv: HTMLDivElement 
 
@@ -123,6 +144,10 @@ class ApiSelector extends HTMLElement{
 
     oobaUrlInput: HTMLSelectElement 
     oobaUrlConnectButton: HTMLInputElement 
+
+    naiKeyInput: HTMLInputElement 
+    naiUrlConnectButton: HTMLInputElement 
+    naiModelSelect: HTMLSelectElement
 
     openrouterKeyInput: HTMLSelectElement 
     openrouterModelInput: HTMLInputElement 
@@ -154,6 +179,7 @@ class ApiSelector extends HTMLElement{
         this.typeSelector = this.shadow.querySelector("#connection-api")!;
 
         this.openaiDiv = this.shadow.querySelector("#openai-menu")!;
+        this.naiDiv = this.shadow.querySelector("#novelai-menu")!;
         this.oobaDiv = this.shadow.querySelector("#ooba-menu")!;
         this.openrouterDiv = this.shadow.querySelector("#openrouter-menu")!;
         this.customDiv = this.shadow.querySelector("#custom-menu")!;
@@ -163,6 +189,10 @@ class ApiSelector extends HTMLElement{
 
         this.oobaUrlInput = this.shadow.querySelector("#ooba-url")!;
         this.oobaUrlConnectButton = this.shadow.querySelector("#ooba-url-connect")!;
+
+        this.naiKeyInput = this.shadow.querySelector("#novelai-key")!;
+        this.naiUrlConnectButton = this.shadow.querySelector("#novelai-url-connect")!;
+        this.naiModelSelect = this.shadow.querySelector("#novelai-model-select")!;
 
         this.openrouterKeyInput = this.shadow.querySelector("#openrouter-key")!;
         this.openrouterModelInput = this.shadow.querySelector("#openrouter-model")!;
@@ -202,6 +232,10 @@ class ApiSelector extends HTMLElement{
             
             this.openaiModelSelect.value =  apiConfig.model;
         }
+
+        else if(apiConfig.type == "novelai"){
+            this.naiKeyInput.value = apiConfig.key;
+        }
         
         else if(apiConfig.type == "ooba"){
             
@@ -237,6 +271,9 @@ class ApiSelector extends HTMLElement{
                 case 'openai': 
                     this.saveOpenaiConfig();
                 break;
+                case 'novelai': 
+                    this.saveNaiConfig();
+                break;
                 case 'ooba': 
                     this.saveOobaConfig();
                 break;
@@ -254,6 +291,10 @@ class ApiSelector extends HTMLElement{
             this.saveOpenaiConfig();
         })
 
+        this.naiDiv.addEventListener("change", (e:any) =>{
+            this.saveNaiConfig();
+        })
+
         this.oobaDiv.addEventListener("change", (e:any) =>{
             this.saveOobaConfig();
         })
@@ -269,7 +310,12 @@ class ApiSelector extends HTMLElement{
         this.testConnectionButton.addEventListener('click', async (e:any) =>{
             //@ts-ignore
             config = await ipcRenderer.invoke('get-config');
-            let con = new ApiConnection(config[this.confID].connection, config[this.confID].parameters);
+            let con;
+            if(config.textGenerationApiConnectionConfig.connection.type === "novelai"){
+                con = new NaiApiConnection(config[this.confID].connection, config[this.confID].parameters);
+            } else{
+                con = new ApiConnection(config[this.confID].connection, config[this.confID].parameters);
+            }
 
             this.testConnectionSpan.innerText = "...";
             this.testConnectionSpan.style.color = "white";
@@ -330,24 +376,35 @@ class ApiSelector extends HTMLElement{
         switch (this.typeSelector.value) {
             case 'openai':  
                 this.openaiDiv.style.display = "block";
+                this.naiDiv.style.display = "none";
+                this.oobaDiv.style.display = "none";
+                this.openrouterDiv.style.display = "none";
+                this.customDiv.style.display = "none";
+                break;
+            case 'novelai':  
+                this.openaiDiv.style.display = "none";
+                this.naiDiv.style.display = "block";
                 this.oobaDiv.style.display = "none";
                 this.openrouterDiv.style.display = "none";
                 this.customDiv.style.display = "none";
                 break;
             case 'ooba':
                 this.openaiDiv.style.display = "none";
+                this.naiDiv.style.display = "none";
                 this.oobaDiv.style.display = "block";
                 this.openrouterDiv.style.display = "none";
                 this.customDiv.style.display = "none";
                 break;
             case 'openrouter':
                 this.openaiDiv.style.display = "none";
+                this.naiDiv.style.display = "none";
                 this.oobaDiv.style.display = "none";
                 this.openrouterDiv.style.display = "block";
                 this.customDiv.style.display = "none";
                 break;
             case 'custom':
                 this.openaiDiv.style.display = "none";
+                this.naiDiv.style.display = "none";
                 this.oobaDiv.style.display = "none";
                 this.openrouterDiv.style.display = "none";
                 this.customDiv.style.display = "block";
@@ -361,6 +418,22 @@ class ApiSelector extends HTMLElement{
             baseUrl: "https://api.openai.com/v1",
             key: this.openaiKeyInput.value,
             model: this.openaiModelSelect.value,
+            forceInstruct: this.openrouterInstructModeCheckbox.checked,
+            overwriteContext: this.overwriteContextCheckbox.checked,
+            customContext: this.customContextNumber.value
+        }
+
+        //ipcRenderer.send('config-change', this.confID, newConf);
+        ipcRenderer.send('config-change-nested', this.confID, "connection", newConf);
+        //@ts-ignore
+    }
+
+    saveNaiConfig(){
+        const newConf = {
+            type: "novelai",
+            baseUrl: "https://text.novelai.net",
+            key: this.naiKeyInput.value,
+            model: this.naiModelSelect.value,
             forceInstruct: this.openrouterInstructModeCheckbox.checked,
             overwriteContext: this.overwriteContextCheckbox.checked,
             customContext: this.customContextNumber.value

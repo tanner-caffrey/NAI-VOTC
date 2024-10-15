@@ -4,6 +4,7 @@ const contextLimits = require("../../public/contextLimits.json");
 
 import tiktoken from "js-tiktoken";
 import { ApiConnectionConfig } from "./Config";
+import { ApiConnectionInterface } from "./apiConnectionInterface";
 
 export interface apiConnectionTestResult{
     success: boolean,
@@ -30,7 +31,7 @@ export interface Parameters{
 
 let encoder = tiktoken.getEncoding("cl100k_base");
 
-export class ApiConnection{
+export class ApiConnection implements ApiConnectionInterface{
     type: string; //openrouter, openai, ooba, custom
     client: OpenAI;
     model: string;
